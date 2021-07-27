@@ -78,9 +78,9 @@ impl<T> Index<usize> for AoVec<T> {
     }
 }
 
-impl IntoIterator for AoVec<u8> {
-    type Item = u8;
-    type IntoIter = AoVecIntoIterator<u8>;
+impl<T: Clone> IntoIterator for AoVec<T> {
+    type Item = T;
+    type IntoIter = AoVecIntoIterator<T>;
     fn into_iter(self) -> Self::IntoIter {
         AoVecIntoIterator {
             aovec: self,
@@ -89,10 +89,10 @@ impl IntoIterator for AoVec<u8> {
     }
 }
 
-impl Iterator for AoVecIntoIterator<u8> {
-    type Item = u8;
+impl<T: Clone> Iterator for AoVecIntoIterator<T> {
+    type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
-        let result = Some(self.aovec[self.index]);
+        let result = Some(self.aovec[self.index].to_owned());
         self.index += 1;
         result
     }
