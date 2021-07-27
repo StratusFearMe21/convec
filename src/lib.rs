@@ -11,6 +11,12 @@ use convec::ConVec;
 #[derive(Debug)]
 /// Append only concurrent vector
 pub struct AoVec<T>(ConVec<T>);
+
+/// Iterator variant of AoVec
+pub struct AoVecIntoIterator<T> {
+    aovec: AoVec<T>,
+    index: usize,
+}
 #[derive(Debug)]
 /// Concurrent stack
 pub struct ConStack<T>(ConVec<T>);
@@ -43,11 +49,11 @@ impl<T> ConStack<T> {
 }
 
 impl<T> AoVec<T> {
-    /// Creates a new `AoVece`
+    /// Creates a new `AoVec`
     pub fn new() -> Self {
         AoVec(ConVec::new())
     }
-    /// Returns the length of the `ConStack`.
+    /// Returns the length of the `AoVec`.
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -72,11 +78,31 @@ impl<T> Index<usize> for AoVec<T> {
     }
 }
 
+impl IntoIterator for AoVec<u8> {
+    type Item = u8;
+    type IntoIter = AoVecIntoIterator<u8>;
+    fn into_iter(self) -> Self::IntoIter {
+        AoVecIntoIterator {
+            aovec: self,
+            index: 0,
+        }
+    }
+}
+
+impl Iterator for AoVecIntoIterator<u8> {
+    type Item = u8;
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = Some(self.aovec[self.index]);
+        self.index += 1;
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use std::collections::HashSet;
+    use std::sync::Arc;
 
     #[test]
     fn aovec() {
@@ -89,9 +115,11 @@ mod tests {
 
         for t in 0..n_threads {
             let vec = vec.clone();
-            handles.push(std::thread::spawn(move || for i in 0..n {
-                if i % n_threads == t {
-                    vec.push(i);
+            handles.push(std::thread::spawn(move || {
+                for i in 0..n {
+                    if i % n_threads == t {
+                        vec.push(i);
+                    }
                 }
             }))
         }
@@ -156,9 +184,11 @@ mod tests {
 
         for t in 0..n_threads {
             let stack = stack.clone();
-            handles.push(std::thread::spawn(move || for i in 0..n {
-                if i % n_threads == t {
-                    stack.push(i);
+            handles.push(std::thread::spawn(move || {
+                for i in 0..n {
+                    if i % n_threads == t {
+                        stack.push(i);
+                    }
                 }
             }))
         }
@@ -171,9 +201,11 @@ mod tests {
 
         for t in 0..n_threads {
             let stack = stack.clone();
-            handles.push(std::thread::spawn(move || for i in 0..n {
-                if i % n_threads == t {
-                    stack.pop().is_some();
+            handles.push(std::thread::spawn(move || {
+                for i in 0..n {
+                    if i % n_threads == t {
+                        assert!(stack.pop().is_some());
+                    }
                 }
             }))
         }
